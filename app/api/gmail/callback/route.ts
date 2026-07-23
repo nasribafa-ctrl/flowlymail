@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
 import { encrypt, verifyOAuthState } from "@/lib/crypto";
+import { registerGmailWatch } from "@/lib/gmail-watch";
 
 export const runtime = "nodejs";
 
@@ -214,7 +215,31 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "db_write_failed");
   }
 
-  // 8. Trace l'action (sans jamais logger un token)
+  // 8. Enregistre le "watch" Gmail (Google Pub/Sub) : Google préviendra
+  //    désormais notre app à chaque nouveau mail, au lieu que n8n aille
+  //    vérifier toutes les minutes. Non-bloquant : si ça échoue, la
+  //    connexion Gmail reste valide, et la tâche de renouvellement
+  //    (renew-gmail-watches) réessaiera plus tard.
+  try {
+    const watch = await registerGmailWatch(tokens.access_token);
+    await service
+      .from("gmail_accounts")
+      .update({
+        history_id: watch.historyId,
+        watch_expiration: new Date(watch.expirationMs).toISOString(),
+      })
+      .eq("email_surveille", gmailProfile.emailAddress);
+  } catch (watchError) {
+    console.error("Enregistrement du watch Gmail échoué:", watchError);
+    await service.from("activity_logs").insert({
+      entreprise_id: statePayload.entreprise_id,
+      actor_type: "system",
+      action: "gmail_watch_registration_failed",
+      metadata: { email: gmailProfile.emailAddress },
+    });
+  }
+
+  // 9. Trace l'action (sans jamais logger un token)
   await service.from("activity_logs").insert({
     entreprise_id: statePayload.entreprise_id,
     profile_id: user.id,
