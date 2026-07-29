@@ -49,6 +49,17 @@ export default async function DashboardPage({
             Compte Gmail : <strong>{account.email_surveille}</strong>
           </p>
           <p>Statut : {account.status}</p>
+          {account.status !== "active" && (
+            <div>
+              <p style={{ color: "#b45309" }}>
+                L&apos;accès à ce compte Gmail a été révoqué ou a expiré. Reconnectez-le
+                pour continuer à recevoir les réponses de l&apos;IA.
+              </p>
+              <a href="/api/gmail/connect">
+                <button style={{ padding: 10 }}>Reconnecter Gmail</button>
+              </a>
+            </div>
+          )}
         </div>
       ) : (
         <div>
