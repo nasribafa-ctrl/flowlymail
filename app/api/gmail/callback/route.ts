@@ -2,10 +2,10 @@
  * app/api/gmail/callback/route.ts
  *
  * Reçoit le retour de Google après consentement. Échange le `code` contre
- * les tokens, chiffre le refresh_token (AES-256-GCM), et l'enregistre dans
- * gmail_accounts. n8n ne verra jamais ce refresh_token : il passera par le
- * Token Broker (/api/internal/gmail-token, phase suivante) pour obtenir un
- * access_token de courte durée.
+ * les tokens, chiffre le refresh_token, l'enregistre dans gmail_accounts,
+ * enregistre le watch Gmail (Pub/Sub), ET crée/retrouve le label
+ * anti-boucle "FlowlyMail/Traite" une seule fois ici — plutôt que de le
+ * revérifier à chaque mail dans n8n (optimisation).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -19,7 +19,9 @@ export const runtime = "nodejs";
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GMAIL_PROFILE_ENDPOINT =
   "https://gmail.googleapis.com/gmail/v1/users/me/profile";
+const GMAIL_LABELS_ENDPOINT = "https://gmail.googleapis.com/gmail/v1/users/me/labels";
 const NONCE_COOKIE = "gmail_oauth_nonce";
+const LABEL_NAME = "FlowlyMail/Traite";
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -31,6 +33,41 @@ interface GoogleTokenResponse {
 
 interface GmailProfileResponse {
   emailAddress: string;
+}
+
+interface GmailLabel {
+  id: string;
+  name: string;
+}
+
+/** Retrouve le label FlowlyMail/Traite s'il existe, sinon le crée. */
+async function resolveFlowlyMailLabel(accessToken: string): Promise<string> {
+  const listResponse = await fetch(GMAIL_LABELS_ENDPOINT, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (listResponse.ok) {
+    const data = (await listResponse.json()) as { labels?: GmailLabel[] };
+    const existing = data.labels?.find((l) => l.name === LABEL_NAME);
+    if (existing) return existing.id;
+  }
+
+  const createResponse = await fetch(GMAIL_LABELS_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: LABEL_NAME,
+      labelListVisibility: "labelHide",
+      messageListVisibility: "hide",
+    }),
+  });
+  if (!createResponse.ok) {
+    throw new Error(`Création du label échouée: ${await createResponse.text()}`);
+  }
+  const created = (await createResponse.json()) as GmailLabel;
+  return created.id;
 }
 
 /** Redirige vers le dashboard avec un code d'erreur lisible côté UI. */
@@ -66,14 +103,12 @@ export async function GET(request: NextRequest) {
   const googleError = url.searchParams.get("error");
 
   if (googleError) {
-    // L'utilisateur a refusé le consentement, ou Google a renvoyé une erreur.
     return redirectWithError(request, `google_${googleError}`);
   }
   if (!code || !state) {
     return redirectWithError(request, "missing_code_or_state");
   }
 
-  // 1. Vérifie la signature du state (protège contre un state falsifié)
   let statePayload;
   try {
     statePayload = verifyOAuthState(state);
@@ -82,15 +117,11 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "invalid_state");
   }
 
-  // 2. Vérifie le nonce (protège contre le rejeu d'un state intercepté)
   const nonceCookie = request.cookies.get(NONCE_COOKIE)?.value;
   if (!nonceCookie || nonceCookie !== statePayload.nonce) {
     return redirectWithError(request, "nonce_mismatch");
   }
 
-  // 3. Vérifie que l'utilisateur courant appartient bien à l'entreprise
-  //    encodée dans le state (empêche de connecter Gmail au nom d'une
-  //    autre entreprise que la sienne).
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -110,7 +141,6 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "entreprise_mismatch");
   }
 
-  // 4. Échange le code contre les tokens
   const tokenResponse = await fetch(GOOGLE_TOKEN_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -134,15 +164,9 @@ export async function GET(request: NextRequest) {
   const tokens = (await tokenResponse.json()) as GoogleTokenResponse;
 
   if (!tokens.refresh_token) {
-    // Ne devrait pas arriver grâce à prompt=consent, mais Google peut
-    // parfois omettre le refresh_token (ex. compte déjà autorisé sans
-    // révocation préalable). On préfère échouer explicitement plutôt que
-    // de stocker un compte inutilisable par le Token Broker.
     return redirectWithError(request, "no_refresh_token");
   }
 
-  // 5. Récupère l'adresse Gmail réellement connectée (ne pas faire
-  //    confiance à un email fourni par le client)
   const profileResponse = await fetch(GMAIL_PROFILE_ENDPOINT, {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
@@ -157,10 +181,6 @@ export async function GET(request: NextRequest) {
 
   const gmailProfile = (await profileResponse.json()) as GmailProfileResponse;
 
-  // 6. Vérifie qu'aucune autre entreprise n'a déjà connecté cette adresse
-  //    Gmail. Un upsert basé sur onConflict("email_surveille") écraserait
-  //    silencieusement entreprise_id si on ne faisait pas ce contrôle
-  //    explicite en amont — c'est le scénario qu'on veut interdire.
   const service = createServiceSupabase();
 
   const { data: existingAccount, error: lookupError } = await service
@@ -175,9 +195,6 @@ export async function GET(request: NextRequest) {
   }
 
   if (existingAccount && existingAccount.entreprise_id !== statePayload.entreprise_id) {
-    // Tentative de connecter un Gmail déjà rattaché à une autre entreprise.
-    // On journalise la tentative (utile pour détecter un abus ou une
-    // confusion de compte côté client) sans jamais transférer la propriété.
     await service.from("activity_logs").insert({
       entreprise_id: statePayload.entreprise_id,
       profile_id: user.id,
@@ -188,9 +205,17 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "gmail_already_linked_to_another_entreprise");
   }
 
-  // 7. Chiffre et enregistre. On utilise la clé service_role car cet appel
-  //    est purement serveur et doit pouvoir écrire indépendamment des
-  //    policies RLS conçues pour le dashboard.
+  // Résout (ou crée) le label anti-boucle une seule fois ici, plutôt que
+  // de le revérifier à chaque mail dans n8n.
+  let labelId: string | null = null;
+  try {
+    labelId = await resolveFlowlyMailLabel(tokens.access_token);
+  } catch (labelError) {
+    console.error("Résolution du label FlowlyMail échouée:", labelError);
+    // Non-bloquant : le compte reste utilisable, n8n retentera plus tard
+    // si besoin (voir note dans Check_Gmail_Account).
+  }
+
   const expiresAt = new Date(
     Date.now() + tokens.expires_in * 1000
   ).toISOString();
@@ -206,6 +231,7 @@ export async function GET(request: NextRequest) {
       scope: tokens.scope,
       status: "active",
       connected_at: new Date().toISOString(),
+      flowlymail_label_id: labelId,
     },
     { onConflict: "email_surveille" }
   );
@@ -215,11 +241,6 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "db_write_failed");
   }
 
-  // 8. Enregistre le "watch" Gmail (Google Pub/Sub) : Google préviendra
-  //    désormais notre app à chaque nouveau mail, au lieu que n8n aille
-  //    vérifier toutes les minutes. Non-bloquant : si ça échoue, la
-  //    connexion Gmail reste valide, et la tâche de renouvellement
-  //    (renew-gmail-watches) réessaiera plus tard.
   try {
     const watch = await registerGmailWatch(tokens.access_token);
     await service
@@ -239,7 +260,6 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 9. Trace l'action (sans jamais logger un token)
   await service.from("activity_logs").insert({
     entreprise_id: statePayload.entreprise_id,
     profile_id: user.id,
