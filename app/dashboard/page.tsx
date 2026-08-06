@@ -34,7 +34,10 @@ export default async function DashboardPage({
 
   return (
     <div style={{ maxWidth: 480, margin: "80px auto", fontFamily: "sans-serif" }}>
-      <h1>Tableau de bord</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h1 style={{ margin: 0 }}>Tableau de bord</h1>
+        <a href="/dashboard/parametres">Paramètres</a>
+      </div>
 
       {searchParams.gmail === "connected" && (
         <p style={{ color: "green" }}>Gmail connecté avec succès.</p>
