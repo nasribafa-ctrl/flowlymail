@@ -3,19 +3,23 @@
  *
  * Reçoit l'URL du site d'un client, récupère son contenu, et demande à
  * Claude de le résumer en une description métier exploitable par l'agent
- * IA de FlowlyMail (horaires, services, tarifs...). Le client relit et
- * corrige le résultat avant de valider — ce texte n'est jamais enregistré
- * automatiquement sans validation humaine.
+ * IA de FlowlyMail. Limité à 5 utilisations par compte et par 24h : cette
+ * route consomme des crédits Anthropic à chaque appel, et n'importe quel
+ * compte inscrit (l'inscription elle-même est libre) pourrait sinon
+ * l'utiliser sans limite.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createServiceSupabase } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const MAX_PAGE_TEXT_CHARS = 6000;
 const FETCH_TIMEOUT_MS = 10000;
+const RATE_LIMIT_MAX_CALLS = 5;
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function stripHtml(html: string): string {
   const withoutScripts = html
@@ -42,14 +46,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
 
-  // Nécessite d'être connecté (on ne veut pas exposer cet endpoint publiquement,
-  // il consomme des appels API payants).
   const supabase = await createServerSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
+  }
+
+  const service = createServiceSupabase();
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+
+  const { count, error: countError } = await service
+    .from("activity_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("profile_id", user.id)
+    .eq("action", "ai_infos_generated")
+    .gte("created_at", windowStart);
+
+  if (countError) {
+    console.error("Vérification du quota échouée:", countError);
+    return NextResponse.json({ error: "rate_limit_check_failed" }, { status: 500 });
+  }
+
+  if ((count ?? 0) >= RATE_LIMIT_MAX_CALLS) {
+    return NextResponse.json(
+      {
+        error: "rate_limit_exceeded",
+        message: `Limite de ${RATE_LIMIT_MAX_CALLS} générations par 24h atteinte. Réessayez plus tard ou remplissez le champ manuellement.`,
+      },
+      { status: 429 }
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -122,6 +149,13 @@ export async function POST(request: NextRequest) {
   if (!infosMetier) {
     return NextResponse.json({ error: "ai_generation_empty" }, { status: 502 });
   }
+
+  await service.from("activity_logs").insert({
+    profile_id: user.id,
+    actor_type: "user",
+    action: "ai_infos_generated",
+    metadata: { url },
+  });
 
   return NextResponse.json({ infos_metier: infosMetier });
 }
