@@ -53,7 +53,10 @@ export default async function DashboardPage({
       {searchParams.gmail_error && (
         <p style={{ color: "red" }}>Erreur de connexion Gmail : {searchParams.gmail_error}</p>
       )}
-      {searchParams.payment === "success" && (
+      {searchParams.payment === "success" && subscriptionActive && (
+        <p style={{ color: "green" }}>Abonnement actif.</p>
+      )}
+      {searchParams.payment === "success" && !subscriptionActive && (
         <p style={{ color: "green" }}>Abonnement en cours d&apos;activation...</p>
       )}
       {searchParams.payment === "cancelled" && (
