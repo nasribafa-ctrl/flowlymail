@@ -5,6 +5,11 @@
  * propre entreprise (nom, infos métier, email validateur, mode). Vérifie
  * systématiquement que l'entreprise ciblée est bien la sienne avant
  * d'écrire quoi que ce soit.
+ *
+ * Limitée à 20 modifications par compte et par heure (comptage via
+ * activity_logs, même logique que generate-infos/route.ts) : chaque
+ * mise à jour réussie logue déjà une ligne "entreprise_updated", on la
+ * réutilise directement pour le comptage.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -12,6 +17,9 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
+
+const RATE_LIMIT_MAX_UPDATES = 20;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createServerSupabase();
@@ -33,6 +41,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "no_entreprise" }, { status: 400 });
   }
 
+  const service = createServiceSupabase();
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+
+  const { count, error: countError } = await service
+    .from("activity_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("profile_id", user.id)
+    .eq("action", "entreprise_updated")
+    .gte("created_at", windowStart);
+
+  if (countError) {
+    console.error("Vérification du quota paramètres échouée:", countError);
+    return NextResponse.json({ error: "rate_limit_check_failed" }, { status: 500 });
+  }
+
+  if ((count ?? 0) >= RATE_LIMIT_MAX_UPDATES) {
+    return NextResponse.json(
+      {
+        error: "rate_limit_exceeded",
+        message: `Limite de ${RATE_LIMIT_MAX_UPDATES} modifications par heure atteinte. Réessayez plus tard.`,
+      },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const nom = body?.nom?.trim();
   const infosMetier = body?.infos_metier?.trim();
@@ -49,7 +82,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "email_validateur_required" }, { status: 400 });
   }
 
-  const service = createServiceSupabase();
   const { error: updateError } = await service
     .from("entreprise")
     .update({

@@ -46,7 +46,7 @@ export default function ParametresForm({
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error || "Une erreur est survenue");
+      setError(data.message || data.error || "Une erreur est survenue");
       return;
     }
 

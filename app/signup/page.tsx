@@ -17,6 +17,7 @@ export default function SignupPage() {
     invalid_invite_code: "Code d'invitation invalide.",
     invite_code_already_used: "Ce code d'invitation a déjà été utilisé.",
     email_already_registered: "Un compte existe déjà avec cet email.",
+    rate_limit_exceeded: "Trop de tentatives. Réessayez dans une heure.",
   };
 
   async function handleSubmit(e: React.FormEvent) {
