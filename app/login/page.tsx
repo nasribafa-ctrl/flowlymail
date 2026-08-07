@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +28,25 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  async function handleForgotPassword() {
+    setError(null);
+    setResetSent(false);
+    if (!email) {
+      setError("Renseignez votre email ci-dessus, puis cliquez à nouveau sur ce lien.");
+      return;
+    }
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetLoading(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setResetSent(true);
+  }
+
   async function handleGoogleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -37,6 +58,11 @@ export default function LoginPage() {
     <div style={{ maxWidth: 360, margin: "80px auto", fontFamily: "sans-serif" }}>
       <h1>Connexion FlowlyMail</h1>
       {error && <p style={{ color: "red" }}>{error}</p>}
+      {resetSent && (
+        <p style={{ color: "green" }}>
+          Si un compte existe pour cet email, un lien de réinitialisation vient d&apos;être envoyé.
+        </p>
+      )}
       <button onClick={handleGoogleLogin} style={{ width: "100%", padding: 10, marginBottom: 16 }}>
         Continuer avec Google
       </button>
@@ -61,6 +87,16 @@ export default function LoginPage() {
           {loading ? "Connexion..." : "Se connecter"}
         </button>
       </form>
+      <p>
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          disabled={resetLoading}
+          style={{ background: "none", border: "none", padding: 0, color: "#2563eb", cursor: "pointer" }}
+        >
+          {resetLoading ? "Envoi..." : "Mot de passe oublié ?"}
+        </button>
+      </p>
       <p>
         Pas de compte ? <a href="/signup">Créer un compte</a>
       </p>
