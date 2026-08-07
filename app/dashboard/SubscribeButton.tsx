@@ -28,7 +28,7 @@ export default function SubscribeButton() {
     <div style={{ marginBottom: 16 }}>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <button onClick={handleSubscribe} disabled={loading} style={{ padding: 10 }}>
-        {loading ? "Redirection..." : "S'abonner - 99€/mois"}
+        {loading ? "Redirection..." : "S'abonner - 99€ HT/mois"}
       </button>
     </div>
   );
