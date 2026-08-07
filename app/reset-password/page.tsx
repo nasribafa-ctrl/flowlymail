@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
-  const supabase = createBrowserSupabase();
+  // Mémorisé : createBrowserSupabase() est sinon rappelée à chaque rendu,
+  // ce qui ferait tourner en boucle le useEffect ci-dessous (dépendance
+  // instable) et réarmerait le timeout de secours à chaque frappe.
+  const [supabase] = useState(() => createBrowserSupabase());
   const [ready, setReady] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -21,6 +24,22 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    // Si l'échange du code échoue silencieusement (ex. lien ouvert sur un
+    // autre navigateur/appareil que celui qui a demandé la réinitialisation
+    // — le "code verifier" PKCE est stocké localement), aucun événement ni
+    // erreur d'URL n'arrive : sans ce filet, la page resterait bloquée sur
+    // "Vérification du lien..." indéfiniment.
+    const timeout = setTimeout(() => {
+      setLinkError(
+        "Impossible de vérifier ce lien. Ouvrez-le depuis le même navigateur que celui utilisé pour demander la réinitialisation, ou demandez-en un nouveau."
+      );
+    }, 6000);
+
+    function markReady() {
+      clearTimeout(timeout);
+      setReady(true);
+    }
+
     // Le client Supabase échange automatiquement le code présent dans
     // l'URL contre une session (detectSessionInUrl), puis émet cet
     // événement : on n'affiche le formulaire qu'une fois la session prête.
@@ -28,15 +47,18 @@ export default function ResetPasswordPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        setReady(true);
+        markReady();
       }
     });
 
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
+      if (data.session) markReady();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [supabase]);
 
   async function handleSubmit(e: React.FormEvent) {
