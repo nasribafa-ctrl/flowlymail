@@ -16,18 +16,11 @@ import { createServiceSupabase } from "@/lib/supabase/service";
 export const runtime = "nodejs";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1/scrape";
 const MAX_PAGE_TEXT_CHARS = 6000;
 const FETCH_TIMEOUT_MS = 10000;
 const RATE_LIMIT_MAX_CALLS = 5;
 const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-function stripHtml(html: string): string {
-  const withoutScripts = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ");
-  const withoutTags = withoutScripts.replace(/<[^>]+>/g, " ");
-  return withoutTags.replace(/\s+/g, " ").trim();
-}
 
 function normalizeUrl(input: string): string | null {
   try {
@@ -43,6 +36,10 @@ function normalizeUrl(input: string): string | null {
 export async function POST(request: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error("Variable d'environnement manquante: ANTHROPIC_API_KEY");
+    return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+  }
+  if (!process.env.FIRECRAWL_API_KEY) {
+    console.error("Variable d'environnement manquante: FIRECRAWL_API_KEY");
     return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
   }
 
@@ -94,17 +91,30 @@ export async function POST(request: NextRequest) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const pageResponse = await fetch(url, {
+    const firecrawlResponse = await fetch(FIRECRAWL_API_URL, {
+      method: "POST",
       signal: controller.signal,
-      headers: { "User-Agent": "FlowlyMailOnboardingBot/1.0" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+      },
+      body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
     });
     clearTimeout(timeout);
 
-    if (!pageResponse.ok) {
+    if (!firecrawlResponse.ok) {
+      const detail = await firecrawlResponse.text();
+      console.error("Appel Firecrawl échoué:", detail);
       return NextResponse.json({ error: "site_fetch_failed" }, { status: 502 });
     }
-    const html = await pageResponse.text();
-    pageText = stripHtml(html).slice(0, MAX_PAGE_TEXT_CHARS);
+
+    const firecrawlResult = await firecrawlResponse.json();
+    const markdown = firecrawlResult?.data?.markdown;
+    if (typeof markdown !== "string") {
+      console.error("Réponse Firecrawl inattendue:", firecrawlResult);
+      return NextResponse.json({ error: "site_fetch_failed" }, { status: 502 });
+    }
+    pageText = markdown.slice(0, MAX_PAGE_TEXT_CHARS);
   } catch (err) {
     console.error("Récupération du site échouée:", err);
     return NextResponse.json({ error: "site_fetch_failed" }, { status: 502 });
