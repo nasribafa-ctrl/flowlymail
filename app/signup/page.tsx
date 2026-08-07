@@ -9,14 +9,35 @@ export default function SignupPage() {
   const supabase = createBrowserSupabase();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const errorMessages: Record<string, string> = {
+    invalid_invite_code: "Code d'invitation invalide.",
+    invite_code_already_used: "Ce code d'invitation a déjà été utilisé.",
+    email_already_registered: "Un compte existe déjà avec cet email.",
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signUp({ email, password });
+
+    const res = await fetch("/api/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, invite_code: inviteCode }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setLoading(false);
+      setError(errorMessages[data.error] || "Une erreur est survenue.");
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -31,6 +52,14 @@ export default function SignupPage() {
       <h1>Créer un compte FlowlyMail</h1>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Code d'invitation"
+          value={inviteCode}
+          onChange={(e) => setInviteCode(e.target.value)}
+          required
+          style={{ width: "100%", padding: 8, marginBottom: 8 }}
+        />
         <input
           type="email"
           placeholder="Email"
