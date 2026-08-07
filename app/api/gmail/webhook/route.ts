@@ -16,6 +16,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
+import { sendAlert } from "@/lib/alert";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     notification = JSON.parse(decoded);
   } catch (err) {
     console.error("Webhook Gmail: décodage du message échoué:", err);
+    await sendAlert("gmail/webhook: décodage du message Pub/Sub échoué", err);
     return NextResponse.json({ ok: true });
   }
 
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("Webhook Gmail: appel n8n échoué:", err);
+    await sendAlert("gmail/webhook: appel du webhook n8n échoué", err);
   }
 
   return NextResponse.json({ ok: true });

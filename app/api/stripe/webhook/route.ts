@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { createStripeClient } from "@/lib/stripe";
 import { createServiceSupabase } from "@/lib/supabase/service";
+import { sendAlert } from "@/lib/alert";
 
 export const runtime = "nodejs";
 
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error("Signature du webhook Stripe invalide:", err);
+    await sendAlert("stripe/webhook: signature invalide (secret mal configuré ou requête suspecte)", err);
     return NextResponse.json({ error: "invalid_signature" }, { status: 400 });
   }
 

@@ -13,6 +13,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
 import { encrypt, verifyOAuthState } from "@/lib/crypto";
 import { registerGmailWatch } from "@/lib/gmail-watch";
+import { sendAlert } from "@/lib/alert";
 
 export const runtime = "nodejs";
 
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
     statePayload = verifyOAuthState(state);
   } catch (err) {
     console.error("state OAuth invalide:", err);
+    await sendAlert("gmail/callback: state OAuth invalide (lien altéré ou expiré)", err);
     return redirectWithError(request, "invalid_state");
   }
 
@@ -212,6 +214,7 @@ export async function GET(request: NextRequest) {
     labelId = await resolveFlowlyMailLabel(tokens.access_token);
   } catch (labelError) {
     console.error("Résolution du label FlowlyMail échouée:", labelError);
+    await sendAlert("gmail/callback: résolution du label FlowlyMail/Traite échouée", labelError);
     // Non-bloquant : le compte reste utilisable, n8n retentera plus tard
     // si besoin (voir note dans Check_Gmail_Account).
   }
@@ -252,6 +255,7 @@ export async function GET(request: NextRequest) {
       .eq("email_surveille", gmailProfile.emailAddress);
   } catch (watchError) {
     console.error("Enregistrement du watch Gmail échoué:", watchError);
+    await sendAlert("gmail/callback: enregistrement du watch Gmail échoué", watchError);
     await service.from("activity_logs").insert({
       entreprise_id: statePayload.entreprise_id,
       actor_type: "system",

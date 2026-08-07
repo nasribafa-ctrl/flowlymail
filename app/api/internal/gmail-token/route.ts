@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
 import { encrypt, decrypt } from "@/lib/crypto";
+import { sendAlert } from "@/lib/alert";
 
 export const runtime = "nodejs";
 
@@ -60,7 +61,8 @@ export async function POST(request: NextRequest) {
   let body: RequestBody;
   try {
     body = await request.json();
-  } catch {
+  } catch (err) {
+    await sendAlert("internal/gmail-token: corps de requête JSON invalide (appel n8n malformé)", err);
     return NextResponse.json({ error: "invalid_json_body" }, { status: 400 });
   }
 

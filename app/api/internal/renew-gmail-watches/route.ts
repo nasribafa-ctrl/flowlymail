@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
 import { registerGmailWatch } from "@/lib/gmail-watch";
+import { sendAlert } from "@/lib/alert";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
       results.push({ email: account.email_surveille, ok: true });
     } catch (err) {
       console.error(`Renouvellement échoué pour ${account.email_surveille}:`, err);
+      await sendAlert(`internal/renew-gmail-watches: renouvellement échoué pour ${account.email_surveille}`, err);
       results.push({ email: account.email_surveille, ok: false });
     }
   }
