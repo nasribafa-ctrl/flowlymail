@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
+import SubscribeButton from "./SubscribeButton";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { gmail?: string; gmail_error?: string };
+  searchParams: { gmail?: string; gmail_error?: string; payment?: string };
 }) {
   const supabase = await createServerSupabase();
   const {
@@ -25,12 +26,19 @@ export default async function DashboardPage({
     redirect("/onboarding");
   }
 
+  const { data: entreprise } = await supabase
+    .from("entreprise")
+    .select("stripe_subscription_status")
+    .eq("id", profile.entreprise_id)
+    .single();
+
   const { data: gmailAccounts } = await supabase
     .from("gmail_accounts")
     .select("email_surveille, status, connected_at")
     .eq("entreprise_id", profile.entreprise_id);
 
   const account = gmailAccounts?.[0];
+  const subscriptionActive = entreprise?.stripe_subscription_status === "active";
 
   return (
     <div style={{ maxWidth: 480, margin: "80px auto", fontFamily: "sans-serif" }}>
@@ -45,6 +53,14 @@ export default async function DashboardPage({
       {searchParams.gmail_error && (
         <p style={{ color: "red" }}>Erreur de connexion Gmail : {searchParams.gmail_error}</p>
       )}
+      {searchParams.payment === "success" && (
+        <p style={{ color: "green" }}>Abonnement en cours d&apos;activation...</p>
+      )}
+      {searchParams.payment === "cancelled" && (
+        <p style={{ color: "#b45309" }}>Abonnement annulé.</p>
+      )}
+
+      {!subscriptionActive && <SubscribeButton />}
 
       {account ? (
         <div>
