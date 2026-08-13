@@ -1,83 +1,285 @@
+const thStyle: React.CSSProperties = {
+  textAlign: "left",
+  padding: "8px 10px",
+  borderBottom: "2px solid #ddd",
+  fontSize: 13,
+  whiteSpace: "nowrap",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "8px 10px",
+  borderBottom: "1px solid #eee",
+  verticalAlign: "top",
+  fontSize: 14,
+};
+
 export default function ConfidentialitePage() {
   return (
     <div style={{ maxWidth: 720, margin: "60px auto 100px", fontFamily: "sans-serif", lineHeight: 1.6, padding: "0 20px" }}>
-      <h1>Politique de confidentialité</h1>
-      <p style={{ color: "#666" }}>Dernière mise à jour : 30 juillet 2026</p>
+      <h1>Politique de confidentialité — FlowlyMail</h1>
+      <p style={{ color: "#666" }}>Dernière mise à jour : 13 août 2026</p>
 
-      <h2>1. Qui nous sommes</h2>
+      <h2>1. Responsable du traitement</h2>
       <p>
-        FlowlyMail (« nous », « notre ») est un service qui aide les entreprises à
-        répondre automatiquement à leurs e-mails clients grâce à l'intelligence
-        artificielle. Cette page décrit quelles données nous collectons, pourquoi,
-        et comment elles sont protégées.
-      </p>
-
-      <h2>2. Données que nous collectons</h2>
-      <p>Lorsque vous utilisez FlowlyMail, nous collectons :</p>
-      <ul>
-        <li>Les informations de votre compte : nom, adresse e-mail, nom de votre entreprise</li>
-        <li>Les informations métier que vous renseignez (horaires, services, tarifs) pour permettre à l'IA de répondre correctement</li>
-        <li>
-          Si vous connectez votre compte Gmail : le contenu des e-mails reçus sur
-          l'adresse que vous choisissez de connecter, ainsi que les métadonnées
-          associées (expéditeur, objet, date)
-        </li>
-      </ul>
-
-      <h2>3. Utilisation des données Gmail</h2>
-      <p>
-        L'accès à votre compte Gmail est utilisé <strong>uniquement</strong> pour :
-      </p>
-      <ul>
-        <li>Lire les e-mails non lus reçus sur l'adresse que vous avez connectée</li>
-        <li>Générer, avec une intelligence artificielle, une proposition de réponse basée sur les informations de votre entreprise</li>
-        <li>Envoyer cette réponse (directement, ou après votre validation selon le mode choisi)</li>
-      </ul>
-      <p>
-        FlowlyMail n'utilise jamais le contenu de vos e-mails à des fins
-        publicitaires, ne les revend à aucun tiers, et ne les partage avec aucune
-        autre société. L'usage que nous faisons des données obtenues via les API
-        Google respecte la{" "}
-        <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer">
-          Politique relative aux données utilisateur des API Google
-        </a>
-        , y compris les exigences de Limited Use.
-      </p>
-
-      <h2>4. Stockage et sécurité</h2>
-      <p>
-        Les jetons d'accès à votre compte Gmail sont chiffrés (AES-256) avant
-        d'être stockés, et ne sont jamais accessibles en clair, y compris par
-        notre équipe technique. Chaque entreprise cliente est isolée des autres :
-        aucune donnée n'est partagée entre deux comptes FlowlyMail différents.
-      </p>
-
-      <h2>5. Conservation des données</h2>
-      <p>
-        Vos données sont conservées tant que votre compte FlowlyMail est actif.
-        Si vous supprimez votre compte ou déconnectez votre Gmail, les jetons
-        d'accès associés sont immédiatement invalidés et supprimés de notre base.
-      </p>
-
-      <h2>6. Vos droits</h2>
-      <p>
-        Vous pouvez à tout moment déconnecter votre compte Gmail depuis votre
-        tableau de bord, demander la suppression de votre compte, ou nous
-        contacter pour toute question concernant vos données, à l'adresse{" "}
+        Ahmed Nasri, auto-entrepreneur, SIRET 107 392 250 00018, 8 Rue Henri Dunant,
+        31100 Toulouse, France, ci-après « nous » ou « l'Éditeur », est responsable
+        du traitement des données décrites dans la présente politique, au sens du
+        Règlement Général sur la Protection des Données (RGPD). Pour toute question
+        relative à cette politique ou pour exercer vos droits, contactez-nous à{" "}
         <a href="mailto:contact@flowlymail.fr">contact@flowlymail.fr</a>.
       </p>
 
-      <h2>7. Modifications de cette politique</h2>
+      <h2>2. Données traitées et finalités</h2>
+
+      <h3>2.1 Données du Client (utilisateur direct de FlowlyMail)</h3>
+      <div style={{ overflowX: "auto", margin: "16px 0" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%" }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Donnée</th>
+              <th style={thStyle}>Finalité</th>
+              <th style={thStyle}>Base légale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={tdStyle}>Email, nom de l'entreprise, informations métier</td>
+              <td style={tdStyle}>Fourniture du service, personnalisation des réponses IA</td>
+              <td style={tdStyle}>Exécution du contrat</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Adresse Gmail connectée, jetons d'authentification OAuth (chiffrés)</td>
+              <td style={tdStyle}>Accès technique à la boîte Gmail pour lire/répondre aux emails</td>
+              <td style={tdStyle}>Exécution du contrat</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Données de facturation</td>
+              <td style={tdStyle}>Paiement de l'abonnement (traité par Stripe)</td>
+              <td style={tdStyle}>Exécution du contrat / obligation légale</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>2.2 Données des correspondants du Client (prospects/clients du Client)</h3>
       <p>
-        Nous pouvons mettre à jour cette politique de confidentialité
-        occasionnellement. La date de dernière mise à jour est indiquée en haut
-        de cette page.
+        Dans le cadre du fonctionnement du service, FlowlyMail traite
+        automatiquement le contenu des emails reçus par la boîte Gmail
+        surveillée (adresse expéditrice, sujet, corps du message), afin de
+        générer une réponse pertinente. Le Client reste responsable, en tant
+        que responsable de traitement pour ces données, de la licéité de la
+        collecte des adresses email traitées ; l'Éditeur agit ici en tant que
+        sous-traitant au sens du RGPD pour cette catégorie de données.
       </p>
 
-      <h2>8. Contact</h2>
+      <h2>3. Durées de conservation</h2>
+      <ul>
+        <li>
+          Les données des échanges email (validations_en_attente) sont
+          anonymisées automatiquement après 90 jours (contenu remplacé,
+          métadonnées statistiques conservées)
+        </li>
+        <li>
+          Les jetons d'accès Gmail sont purgés dès la révocation de la
+          connexion (status = revoked)
+        </li>
+        <li>
+          L'ensemble des données d'un compte Client (entreprise, comptes
+          Gmail, historique) est supprimé 12 mois après résiliation de
+          l'abonnement
+        </li>
+      </ul>
+
+      <h2>4. Destinataires et sous-traitants</h2>
       <p>
-        Pour toute question relative à cette politique de confidentialité :{" "}
-        <a href="mailto:contact@flowlymail.fr">contact@flowlymail.fr</a>
+        Les données sont hébergées et traitées par les prestataires suivants,
+        chacun agissant en tant que sous-traitant :
+      </p>
+      <div style={{ overflowX: "auto", margin: "16px 0" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%" }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Prestataire</th>
+              <th style={thStyle}>Rôle</th>
+              <th style={thStyle}>Localisation</th>
+              <th style={thStyle}>Garanties</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={tdStyle}>Render</td>
+              <td style={tdStyle}>Hébergement de l'application backend (API + tâches planifiées)</td>
+              <td style={tdStyle}>Frankfurt, Allemagne (EU Central)</td>
+              <td style={tdStyle}>
+                Hébergement en UE ; entreprise américaine soumise au régime des
+                transferts internationaux pour l'administration du service,
+                encadré par des clauses contractuelles types
+              </td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Supabase</td>
+              <td style={tdStyle}>
+                Base de données (Postgres) : entreprises, comptes Gmail
+                connectés, historique des échanges
+              </td>
+              <td style={tdStyle}>Paris, France (région AWS eu-west-3)</td>
+              <td style={tdStyle}>Hébergement 100% UE, aucun transfert international pour cette donnée</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Anthropic (Claude API)</td>
+              <td style={tdStyle}>
+                Génération des réponses par intelligence artificielle à partir
+                du contenu des emails reçus
+              </td>
+              <td style={tdStyle}>États-Unis</td>
+              <td style={tdStyle}>Clauses contractuelles types</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Google (Gmail API)</td>
+              <td style={tdStyle}>
+                Accès à la boîte email du Client, via autorisation OAuth du
+                Client (lecture, envoi, labels, brouillons)
+              </td>
+              <td style={tdStyle}>International</td>
+              <td style={tdStyle}>Certifié dans le cadre du programme de conformité Google</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Token broker Gmail (application Next.js, hébergée sur Vercel)</td>
+              <td style={tdStyle}>
+                Gestion du rafraîchissement des jetons OAuth Gmail ; tokens
+                chiffrés en base (AES-256-GCM), jamais renvoyés en clair,
+                accès protégé par secret partagé
+              </td>
+              <td style={tdStyle}>Union Européenne (région Vercel Europe)</td>
+              <td style={tdStyle}>Hébergement 100% UE</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Google Cloud Pub/Sub</td>
+              <td style={tdStyle}>
+                Notifications de nouvel email (métadonnées uniquement, pas le
+                contenu) déclenchant le traitement
+              </td>
+              <td style={tdStyle}>International</td>
+              <td style={tdStyle}>Certifié dans le cadre du programme de conformité Google</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Firecrawl</td>
+              <td style={tdStyle}>
+                Extraction du contenu du site web du Client lors de
+                l'inscription, pour pré-remplir automatiquement la
+                description de son activité
+              </td>
+              <td style={tdStyle}>À préciser</td>
+              <td style={tdStyle}>—</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Sentry</td>
+              <td style={tdStyle}>Suivi et diagnostic des erreurs techniques (exceptions applicatives)</td>
+              <td style={tdStyle}>À préciser selon la région du projet Sentry configuré</td>
+              <td style={tdStyle}>Clauses contractuelles types si hors UE</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Stripe</td>
+              <td style={tdStyle}>Traitement des paiements (email, moyen de paiement, abonnement)</td>
+              <td style={tdStyle}>International</td>
+              <td style={tdStyle}>Certifié PCI-DSS, clauses contractuelles types</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Hostinger</td>
+              <td style={tdStyle}>Hébergement du nom de domaine / DNS</td>
+              <td style={tdStyle}>UE</td>
+              <td style={tdStyle}>—</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>n8n</td>
+              <td style={tdStyle}>
+                Réception des notifications Gmail (webhook) et déclenchement
+                du traitement ; ne reçoit que l'identifiant du compte Gmail
+                concerné, jamais le contenu des emails
+              </td>
+              <td style={tdStyle}>
+                n8n Cloud (abonnement payant) — infrastructure sous-jacente
+                basée sur un fournisseur cloud américain (Azure), données
+                généralement stockées en région EU selon la configuration du
+                compte
+              </td>
+              <td style={tdStyle}>Clauses contractuelles types</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Aucune donnée n'est vendue à des tiers. Aucune donnée client n'est
+        partagée avec Discord ; le canal d'alerte interne ne reçoit que des
+        messages d'erreur technique génériques (contexte + message
+        d'erreur), sans contenu d'email ni identifiant personnel.
+      </p>
+
+      <h2>5. Transferts hors Union Européenne</h2>
+      <p>
+        Certains sous-traitants (Anthropic notamment) sont basés aux
+        États-Unis. Ces transferts sont encadrés par les clauses
+        contractuelles types de la Commission européenne, mécanisme reconnu
+        par le RGPD pour les transferts hors UE.
+      </p>
+
+      <h2>6. Sécurité</h2>
+      <ul>
+        <li>Les jetons d'accès Gmail sont stockés chiffrés en base de données</li>
+        <li>Les communications entre les différents composants du service sont chiffrées (HTTPS)</li>
+        <li>
+          L'accès aux routes de validation manuelle est protégé par un jeton
+          secret à usage unique, distinct de l'identifiant de la ressource
+        </li>
+        <li>Un rate-limiting technique protège contre les abus et les tentatives de force brute</li>
+      </ul>
+
+      <h2>7. Droits des personnes concernées</h2>
+      <p>
+        Conformément au RGPD, toute personne concernée (Client ou
+        correspondant d'un Client) dispose des droits suivants : accès,
+        rectification, effacement, limitation, portabilité, opposition, et,
+        le cas échéant, retrait du consentement à tout moment sans affecter
+        la licéité du traitement antérieur. Ces droits peuvent être exercés
+        en écrivant à{" "}
+        <a href="mailto:contact@flowlymail.fr">contact@flowlymail.fr</a>, en
+        précisant votre demande et en joignant un justificatif d'identité si
+        nécessaire. Nous répondons dans un délai maximal d'un mois.
+      </p>
+      <p>
+        Pour les correspondants d'un Client (destinataires des réponses
+        automatiques), la demande doit être adressée en priorité au Client
+        concerné (responsable de traitement pour cette relation), ou à
+        défaut à l'adresse ci-dessus.
+      </p>
+      <p>
+        Toute personne dispose également du droit d'introduire une
+        réclamation auprès de la{" "}
+        <a href="https://www.cnil.fr" target="_blank" rel="noreferrer">
+          CNIL (www.cnil.fr)
+        </a>
+        , l'autorité de contrôle compétente en France.
+      </p>
+
+      <h2>8. Cookies</h2>
+      <p>
+        Aucun cookie de suivi publicitaire ou d'analytics n'est utilisé.
+        Seuls des cookies strictement nécessaires au fonctionnement du
+        service sont posés, exemptés à ce titre de bandeau de consentement
+        au sens du RGPD/ePrivacy :
+      </p>
+      <ul>
+        <li>Cookies de session (authentification du Client sur son espace)</li>
+        <li>
+          Cookie technique anti-CSRF de courte durée (10 minutes), utilisé
+          uniquement pendant la procédure de connexion d'un compte Gmail
+        </li>
+      </ul>
+
+      <h2>9. Contact</h2>
+      <p>
+        Pour toute question relative à la présente politique ou pour exercer
+        vos droits : <a href="mailto:contact@flowlymail.fr">contact@flowlymail.fr</a>
       </p>
     </div>
   );
