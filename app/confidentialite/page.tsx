@@ -246,11 +246,20 @@ export default function ConfidentialitePage() {
           que la fourniture du service ;
         </li>
         <li>
-          Anthropic, notre fournisseur d'IA, n'utilise pas le contenu
-          transmis via son API pour entraîner ses propres modèles,
-          conformément à sa politique d'utilisation des données API.
+          Anthropic, notre fournisseur d'IA (API payante, plan standard
+          "pay-as-you-go" / Build), n'utilise pas le contenu transmis via son
+          API pour entraîner ses propres modèles, conformément à sa politique
+          d'utilisation des données API.
         </li>
       </ul>
+      <p>
+        Déclaration de conformité (« Limited Use ») : l'utilisation des
+        données brutes ou dérivées reçues via les API Google Workspace
+        respecte la politique Google relative aux données utilisateur, y
+        compris les exigences de « Limited Use ». (« The use of raw or
+        derived user data received from Workspace APIs will adhere to the
+        Google User Data Policy, including the Limited Use requirements. »)
+      </p>
 
       <h2>6. Sécurité</h2>
       <ul>
