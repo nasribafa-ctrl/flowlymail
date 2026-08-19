@@ -10,16 +10,24 @@
  *
  * FlowlyMail fonctionne sur invitation (voir app/api/signup/route.ts) :
  * "Continuer avec Google" ne passe pas par cette vérification et créerait
- * sinon un compte librement. Comme les comptes légitimes n'obtiennent une
- * ligne `profiles` qu'à la fin de l'onboarding, on ne peut pas distinguer
+ * sinon un compte librement — Supabase crée la ligne `auth.users`
+ * automatiquement lors de l'échange de code, avant même d'arriver ici.
+ *
+ * Comme les comptes légitimes n'obtiennent une ligne `profiles` qu'à la
+ * fin de l'onboarding, l'absence de `profiles` ne suffit pas à distinguer
  * un tout nouveau compte Google d'un compte invité qui n'a pas terminé son
- * onboarding — dans les deux cas on bloque ici et on renvoie vers
- * /invitation-requise ; l'utilisateur légitime peut toujours se connecter
- * via email/mot de passe pour terminer son onboarding.
+ * onboarding : on tranche via `invite_codes.used_by`. S'il correspond à cet
+ * utilisateur, l'invitation a déjà été consommée légitimement, on le
+ * renvoie simplement terminer son onboarding. Sinon, c'est un compte créé
+ * par erreur (clic sur "Continuer avec Google" sans invitation) : on le
+ * supprime réellement (pas juste signOut, qui ne fait que couper la
+ * session) pour libérer l'email et permettre une inscription normale via
+ * /signup avec un vrai code.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createServiceSupabase } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 
@@ -48,7 +56,26 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
 
       if (!profile) {
+        const service = createServiceSupabase();
+        const { data: invite } = await service
+          .from("invite_codes")
+          .select("code")
+          .eq("used_by", user.id)
+          .maybeSingle();
+
+        if (invite) {
+          // Compte déjà invité, onboarding pas terminé : on garde la
+          // session établie par ce login Google et on le laisse continuer.
+          return NextResponse.redirect(new URL("/onboarding", request.url));
+        }
+
         await supabase.auth.signOut();
+
+        const { error: deleteError } = await service.auth.admin.deleteUser(user.id);
+        if (deleteError) {
+          console.error("Suppression du compte Google orphelin échouée:", deleteError);
+        }
+
         return NextResponse.redirect(new URL("/invitation-requise", request.url));
       }
     }
