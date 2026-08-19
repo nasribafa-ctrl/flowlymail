@@ -223,6 +223,35 @@ export default function ConfidentialitePage() {
         par le RGPD pour les transferts hors UE.
       </p>
 
+      <h2>5bis. Usage des données Google (Gmail) et intelligence artificielle</h2>
+      <p>
+        Les données issues de votre compte Google (contenu des emails reçus,
+        métadonnées) sont utilisées exclusivement pour fournir la
+        fonctionnalité principale de FlowlyMail : générer, en temps réel, une
+        proposition de réponse à un email entrant. Ces données sont
+        transmises à l'API Anthropic (Claude) à cette seule fin.
+      </p>
+      <p>Nous affirmons explicitement que :</p>
+      <ul>
+        <li>
+          Les données Google (Gmail) ne sont jamais utilisées pour entraîner,
+          développer ou améliorer des modèles d'intelligence artificielle ou
+          d'apprentissage automatique, qu'ils soient personnalisés ou
+          généraux ;
+        </li>
+        <li>
+          Ces données ne sont jamais utilisées à des fins de publicité
+          ciblée, de revente à des courtiers de données, d'évaluation de
+          solvabilité, ou de constitution de bases de données à d'autres fins
+          que la fourniture du service ;
+        </li>
+        <li>
+          Anthropic, notre fournisseur d'IA, n'utilise pas le contenu
+          transmis via son API pour entraîner ses propres modèles,
+          conformément à sa politique d'utilisation des données API.
+        </li>
+      </ul>
+
       <h2>6. Sécurité</h2>
       <ul>
         <li>Les jetons d'accès Gmail sont stockés chiffrés en base de données</li>
