@@ -97,8 +97,11 @@ export default function LoginPage() {
           {resetLoading ? "Envoi..." : "Mot de passe oublié ?"}
         </button>
       </p>
-      <p>
-        Pas de compte ? <a href="/signup">Créer un compte</a>
+      <p style={{ fontSize: 12, color: "#666" }}>
+        Pas de compte Google ?{" "}
+        <a href="/signup" style={{ color: "#666" }}>
+          Créer un compte avec un code d&apos;invitation
+        </a>
       </p>
     </div>
   );

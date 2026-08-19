@@ -18,11 +18,15 @@
  * un tout nouveau compte Google d'un compte invité qui n'a pas terminé son
  * onboarding : on tranche via `invite_codes.used_by`. S'il correspond à cet
  * utilisateur, l'invitation a déjà été consommée légitimement, on le
- * renvoie simplement terminer son onboarding. Sinon, c'est un compte créé
- * par erreur (clic sur "Continuer avec Google" sans invitation) : on le
- * supprime réellement (pas juste signOut, qui ne fait que couper la
- * session) pour libérer l'email et permettre une inscription normale via
- * /signup avec un vrai code.
+ * renvoie simplement terminer son onboarding. Sinon, on garde quand même la
+ * session (le compte Google vient d'être créé par Supabase pendant
+ * l'échange ci-dessus, on ne peut pas revenir en arrière) et on redirige
+ * vers /invitation-requise, qui demande le code d'invitation et le
+ * consomme pour ce compte (voir app/api/invitation/route.ts) avant de
+ * continuer vers /onboarding. Si l'utilisateur abandonne sans valider de
+ * code, le compte reste orphelin (pas de profile, pas d'invite consommée)
+ * jusqu'à ce que le cron app/api/internal/cleanup-orphan-accounts le
+ * supprime.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -63,20 +67,8 @@ export async function GET(request: NextRequest) {
           .eq("used_by", user.id)
           .maybeSingle();
 
-        if (invite) {
-          // Compte déjà invité, onboarding pas terminé : on garde la
-          // session établie par ce login Google et on le laisse continuer.
-          return NextResponse.redirect(new URL("/onboarding", request.url));
-        }
-
-        await supabase.auth.signOut();
-
-        const { error: deleteError } = await service.auth.admin.deleteUser(user.id);
-        if (deleteError) {
-          console.error("Suppression du compte Google orphelin échouée:", deleteError);
-        }
-
-        return NextResponse.redirect(new URL("/invitation-requise", request.url));
+        const destination = invite ? "/onboarding" : "/invitation-requise";
+        return NextResponse.redirect(new URL(destination, request.url));
       }
     }
   }
